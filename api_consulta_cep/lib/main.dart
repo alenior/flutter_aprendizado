@@ -62,7 +62,7 @@ class _CepConsultaState extends State<CepConsulta> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Consulta CEP'),
+        title: Text('Consulta CEP - Alencar Júnior'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
