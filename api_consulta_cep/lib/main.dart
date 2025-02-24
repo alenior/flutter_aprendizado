@@ -25,10 +25,10 @@ class CepConsulta extends StatefulWidget {
   const CepConsulta({super.key});
 
   @override
-  _CepConsultaState createState() => _CepConsultaState();
+  CepConsultaState createState() => CepConsultaState();
 }
 
-class _CepConsultaState extends State<CepConsulta> {
+class CepConsultaState extends State<CepConsulta> {
   final _cepController = TextEditingController();
   Cep? _cep;
   String _errorMessage = '';

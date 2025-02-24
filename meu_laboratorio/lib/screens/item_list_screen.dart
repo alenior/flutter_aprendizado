@@ -8,10 +8,10 @@ class ItemListScreen extends StatefulWidget {
   const ItemListScreen({super.key});
 
   @override
-  _ItemListScreenState createState() => _ItemListScreenState();
+  ItemListScreenState createState() => ItemListScreenState();
 }
 
-class _ItemListScreenState extends State<ItemListScreen> {
+class ItemListScreenState extends State<ItemListScreen> {
   late Future<List<Item>> _itemsFuture;
 
   @override

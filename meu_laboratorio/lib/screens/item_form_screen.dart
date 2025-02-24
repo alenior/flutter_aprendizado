@@ -8,10 +8,10 @@ class ItemFormScreen extends StatefulWidget {
   const ItemFormScreen({super.key});
 
   @override
-  _ItemFormScreenState createState() => _ItemFormScreenState();
+  ItemFormScreenState createState() => ItemFormScreenState();
 }
 
-class _ItemFormScreenState extends State<ItemFormScreen> {
+class ItemFormScreenState extends State<ItemFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
