@@ -5,7 +5,9 @@ import '../models/item.dart';
 import '../database/database_helper.dart';
 
 class ItemFormScreen extends StatefulWidget {
-  const ItemFormScreen({super.key});
+  final Item? item;
+
+  const ItemFormScreen({super.key, this.item});
 
   @override
   ItemFormScreenState createState() => ItemFormScreenState();
@@ -19,8 +21,26 @@ class ItemFormScreenState extends State<ItemFormScreen> {
   final _quantityController = TextEditingController();
   String _imagePath = '';
 
-  Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+  @override
+  void initState() {
+    super.initState();
+    if (widget.item != null) {
+      _nameController.text = widget.item!.name;
+      _descriptionController.text = widget.item!.description;
+      _valueController.text = widget.item!.value.toStringAsFixed(2).replaceAll('.', ',');
+      _quantityController.text = widget.item!.quantity.toString();
+      _imagePath = widget.item!.imagePath;
+    }
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    final pickedFile = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+      maxWidth: 1024, // Reduz a resolução para evitar problemas de memória
+      maxHeight: 1024,
+      imageQuality: 85, // Ajusta a qualidade para reduzir o tamanho do arquivo
+      requestFullMetadata: false,
+    );
     if (pickedFile != null) {
       setState(() {
         _imagePath = pickedFile.path;
@@ -31,14 +51,19 @@ class ItemFormScreenState extends State<ItemFormScreen> {
   Future<void> _saveItem() async {
     if (_formKey.currentState!.validate()) {
       Item newItem = Item(
+        id: widget.item?.id,
         name: _nameController.text,
         description: _descriptionController.text,
-        value: double.parse(_valueController.text),
+        value: double.parse(_valueController.text.replaceAll(',', '.')),
         quantity: int.parse(_quantityController.text),
         imagePath: _imagePath,
       );
 
-      await DatabaseHelper().insertItem(newItem);
+      if (widget.item == null) {
+        await DatabaseHelper().insertItem(newItem);
+      } else {
+        await DatabaseHelper().updateItem(newItem);
+      }
       Navigator.pop(context);
     }
   }
@@ -47,7 +72,7 @@ class ItemFormScreenState extends State<ItemFormScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Adicionar Item'),
+        title: Text(widget.item == null ? 'Adicionar Item' : 'Editar Item'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -101,9 +126,18 @@ class ItemFormScreenState extends State<ItemFormScreen> {
               _imagePath.isNotEmpty
                   ? Image.file(File(_imagePath), height: 100)
                   : Container(),
-              ElevatedButton(
-                onPressed: _pickImage,
-                child: Text('Escolher Imagem'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton(
+                    onPressed: () => _pickImage(ImageSource.gallery),
+                    child: Text('Galeria'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => _pickImage(ImageSource.camera),
+                    child: Text('Câmera'),
+                  ),
+                ],
               ),
               SizedBox(height: 16),
               ElevatedButton(
