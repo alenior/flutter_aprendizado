@@ -13,16 +13,43 @@ class ItemListScreen extends StatefulWidget {
 
 class ItemListScreenState extends State<ItemListScreen> {
   late Future<List<Item>> _itemsFuture;
+  List<Item> _allItems = [];
+  List<Item> _filteredItems = [];
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _itemsFuture = DatabaseHelper().getItems();
+    _loadItems();
+    _searchController.addListener(_filterItems);
   }
 
-  void _refreshItems() {
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // Função para carregar os itens do banco de dados
+  void _loadItems() {
     setState(() {
-      _itemsFuture = DatabaseHelper().getItems();
+      _itemsFuture = DatabaseHelper().getItems().then((items) {
+        _allItems = items;
+        _filteredItems = items; // Inicializa com todos os itens
+        return items;
+      });
+    });
+  }
+
+  // Função para filtrar os itens com base na pesquisa
+  void _filterItems() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredItems = _allItems
+          .where((item) =>
+              item.name.toLowerCase().contains(query) ||
+              item.description.toLowerCase().contains(query))
+          .toList();
     });
   }
 
@@ -34,34 +61,73 @@ class ItemListScreenState extends State<ItemListScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.add),
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              bool? updated = await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => ItemFormScreen()),
-              ).then((_) => _refreshItems());
+              );
+
+              if (updated == true) {
+                _loadItems(); // Atualiza a lista após adição de item
+              }
             },
           ),
         ],
       ),
-      body: FutureBuilder<List<Item>>(
-        future: _itemsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Erro ao carregar itens'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('Nenhum item cadastrado'));
-          } else {
-            return ListView.builder(
-              itemCount: snapshot.data!.length,
-              itemBuilder: (context, index) {
-                Item item = snapshot.data![index];
-                return ItemCard(item: item, refreshItems: _refreshItems);
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                labelText: 'Pesquisar por nome ou descrição',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          Expanded(
+            child: FutureBuilder<List<Item>>(
+              future: _itemsFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('Erro ao carregar itens'));
+                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Center(child: Text('Nenhum item cadastrado'));
+                } else {
+                  return ListView.builder(
+                    itemCount: _filteredItems.length,
+                    itemBuilder: (context, index) {
+                      Item item = _filteredItems[index];
+                      return GestureDetector(
+                        onTap: () async {
+                          bool? updated = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ItemFormScreen(item: item),
+                            ),
+                          );
+
+                          if (updated == true) {
+                            _loadItems(); // Atualiza a lista após edição do item
+                          }
+                        },
+                        child: ItemCard(
+                          item: item,
+                          refreshItems: _loadItems,
+                          itemCode: index + 1,
+                        ),
+                      );
+                    },
+                  );
+                }
               },
-            );
-          }
-        },
+            ),
+          ),
+        ],
       ),
     );
   }

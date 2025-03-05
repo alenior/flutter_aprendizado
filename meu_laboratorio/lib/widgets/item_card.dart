@@ -8,8 +8,14 @@ import '../screens/item_form_screen.dart';
 class ItemCard extends StatelessWidget {
   final Item item;
   final Function refreshItems;
+  final int itemCode; // Adicionando o código do item
 
-  const ItemCard({super.key, required this.item, required this.refreshItems});
+  const ItemCard({
+    super.key,
+    required this.item,
+    required this.refreshItems,
+    required this.itemCode, // Inicializando o código
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +32,11 @@ class ItemCard extends StatelessWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text('Código: $itemCode'),
+            SizedBox(height: 8), // Espaço entre o código e a descrição
             Text(item.description),
-            Text('Valor: ${currencyFormat.format(item.value)}'), // Agora usa 'value' corretamente
+            SizedBox(height: 8), // Espaço entre a descrição e o valor
+            Text('Valor: ${currencyFormat.format(item.value)}'),
           ],
         ),
         trailing: Text('Qtd: ${item.quantity}'),
