@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:meu_laboratorio/utils/pdf_generator.dart';
 import '../models/item.dart';
 import '../database/database_helper.dart';
-import '../utils/pdf_generator.dart';
 
 class ReportScreen extends StatelessWidget {
   const ReportScreen({super.key});
@@ -9,14 +9,29 @@ class ReportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Gerar Relatório PDF'),
-      ),
+      appBar: AppBar(title: Text('Gerar Relatório PDF')),
       body: Center(
         child: ElevatedButton(
           onPressed: () async {
-            List<Item> items = await DatabaseHelper().getItems();
-            PdfGenerator.generatePdf(items);
+            try {
+              // Buscar os itens no banco de dados
+              List<Item> items = await DatabaseHelper().getItems();
+              if (items.isEmpty) {
+                // Mostrar uma mensagem para o usuário
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Nenhum item encontrado para gerar o relatório'),
+                  ),
+                );
+              } else {
+                // Gerar o PDF e abrir no app
+                await PdfGenerator.generatePdf(items);
+              }
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Erro ao buscar itens: $e')),
+              );
+            }
           },
           child: Text('Gerar Relatório'),
         ),

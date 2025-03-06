@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
+import 'package:path_provider/path_provider.dart'; // Para salvar em diretório específico
+import 'package:flutter/services.dart'; // Para usar Process.run
 import '../models/item.dart';
 import '../database/database_helper.dart';
 
@@ -38,6 +40,7 @@ class ItemFormScreenState extends State<ItemFormScreen> {
   }
 
   Future<void> _requestPermissions() async {
+    // Solicita permissões para câmera, armazenamento e fotos
     await [
       Permission.camera,
       Permission.storage,
@@ -46,47 +49,101 @@ class ItemFormScreenState extends State<ItemFormScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-  final status = await Permission.camera.request();
-  if (status != PermissionStatus.granted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Permissão da câmera negada")),
-    );
-    return;
-  }
+    final status = await Permission.camera.request();
+    if (status != PermissionStatus.granted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Permissão da câmera negada")),
+      );
+      return;
+    }
 
-  try {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: source,
-      maxWidth: 800,
-      maxHeight: 800,
-      imageQuality: 70,
-    );
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 800,
+        maxHeight: 800,
+        imageQuality: 70,
+      );
 
-    if (pickedFile != null) {
-      await Future.delayed(const Duration(milliseconds: 500)); // Adiciona pequeno delay
-      setState(() {
-        _imagePath = pickedFile.path;
-        debugPrint("Imagem salva em: $_imagePath");
-      });
-    } else {
+      if (pickedFile != null) {
+        // Salvar a imagem no diretório adequado
+        await _saveImageToStorage(pickedFile.path);
+        setState(() {
+          _imagePath = pickedFile.path;
+          debugPrint("Imagem salva em: $_imagePath");
+        });
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Nenhuma imagem selecionada")),
+          );
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint("Erro ao acessar a câmera: $e");
+      debugPrint(stackTrace.toString());
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Nenhuma imagem selecionada")),
+          const SnackBar(content: Text("Erro ao acessar a câmera")),
         );
       }
     }
-  } catch (e, stackTrace) {
-    debugPrint("Erro ao acessar a câmera: $e");
-    debugPrint(stackTrace.toString());
+  }
 
-    if (mounted) {
+  Future<void> _saveImageToStorage(String imagePath) async {
+    try {
+      // Obter o diretório externo onde a imagem será salva
+      final directory = await getExternalStorageDirectory();
+      if (directory == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Erro ao acessar o diretório")),
+        );
+        return;
+      }
+
+      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      final newImagePath = '${directory.path}/$fileName.jpg';
+      final imageFile = File(imagePath);
+
+      // Salvar a imagem no novo diretório
+      await imageFile.copy(newImagePath);
+
+      // Adicionar a imagem à galeria
+      await _addImageToGallery(newImagePath);
+
+      setState(() {
+        _imagePath = newImagePath;
+      });
+
+      debugPrint("Imagem salva em: $newImagePath");
+    } catch (e) {
+      debugPrint("Erro ao salvar a imagem: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Erro ao acessar a câmera")),
+        const SnackBar(content: Text("Erro ao salvar a imagem")),
       );
     }
   }
-}
+
+  Future<void> _addImageToGallery(String imagePath) async {
+    try {
+      final File imageFile = File(imagePath);
+
+      // Adicionando a imagem à galeria (via MediaScannerConnection)
+      await imageFile.exists().then((exists) async {
+        if (exists) {
+          final result = await Process.run(
+              'am',
+              ['broadcast', '-a', 'android.intent.action.MEDIA_SCANNER_SCAN_FILE', 'file://$imagePath'],
+              runInShell: true);
+          debugPrint('Imagem adicionada à galeria: $result');
+        }
+      });
+    } catch (e) {
+      debugPrint("Erro ao adicionar imagem à galeria: $e");
+    }
+  }
 
   Future<void> _saveItem() async {
     if (_formKey.currentState!.validate()) {
