@@ -3,7 +3,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart'; // Para salvar em diretório específico
-import 'package:flutter/services.dart'; // Para usar Process.run
 import '../models/item.dart';
 import '../database/database_helper.dart';
 
