@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
+  @override
+  _LoginScreenState createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-
-  LoginScreen({super.key});
+  bool _obscurePassword = true;
 
   void _login(BuildContext context) {
     if (_formKey.currentState!.validate()) {
@@ -17,7 +23,7 @@ class LoginScreen extends StatelessWidget {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Credenciais inválidas')),
+          const SnackBar(content: Text('Credenciais inválidas')),
         );
       }
     }
@@ -26,7 +32,7 @@ class LoginScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Login')),
+      appBar: AppBar(title: const Text('Login')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -35,7 +41,7 @@ class LoginScreen extends StatelessWidget {
             children: [
               TextFormField(
                 controller: _usernameController,
-                decoration: InputDecoration(labelText: 'Usuário'),
+                decoration: const InputDecoration(labelText: 'Usuário'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, insira o usuário';
@@ -45,8 +51,18 @@ class LoginScreen extends StatelessWidget {
               ),
               TextFormField(
                 controller: _passwordController,
-                decoration: InputDecoration(labelText: 'Senha'),
-                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Senha',
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                ),
+                obscureText: _obscurePassword,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Por favor, insira a senha';
@@ -54,10 +70,10 @@ class LoginScreen extends StatelessWidget {
                   return null;
                 },
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () => _login(context),
-                child: Text('Entrar'),
+                child: const Text('Entrar'),
               ),
             ],
           ),
